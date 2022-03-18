@@ -276,7 +276,7 @@ def generate_human_readable_page_template(qrs, input_filename, sha256sum, page_w
     human_readable_page_template = ""
     qr_data = [qr.data_list[0].data.decode('utf-8') for qr in qrs]
 
-    backup_date = datetime.date.today().strftime("%Y-%m-%d")
+    backup_date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
     human_readable_page_template = f"Generated on: {backup_date}\n" +\
                                    f"Input filename: {input_filename}\n" +\
                                    f"sha256: {sha256sum}\n\n"
