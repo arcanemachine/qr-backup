@@ -9,7 +9,7 @@ Requirements to restore from the PDF: zbar (only)
 """
 import PIL, PIL.Image, PIL.ImageDraw, PIL.ImageFont, PIL.ImageOps
 import english_wordlist
-import base64, datetime, gzip, hashlib, io, logging, math, os, random, subprocess, sys, textwrap, qrcode
+import base64, datetime, gzip, hashlib, io, logging, math, os, random, re, subprocess, sys, textwrap, qrcode
 assert sys.version_info >= (3,6), "Python 3.6 is required. Submit a patch removing f-strings to fix it, sucka!"
 
 HELP='''Usage: qr-codes.py [OPTIONS] FILE
@@ -272,6 +272,31 @@ def generate_chunks(data, chunk_size_base64):
     assert len(chunks) == num_qrs
     return chunk_digits, chunks
 
+def generate_human_readable_page_template(qrs, page_w_pixel, qr_hpad):
+    human_readable_page_template = ""
+    qr_data = [qr.data_list[0].data.decode('utf-8') for qr in qrs]
+
+    human_readable_page_template = ""
+
+    for qr_code_text in qr_data:
+        qr_code_label = generate_label(qr_code_text, page_w_pixel - qr_hpad, max_fontsize=24, min_fontsize=24, allow_oversize=True)
+
+        # if the qr code is too large to fit on the page, then split it into lines small enough to fit on the page
+        if qr_code_label.size[0] > page_w_pixel - 50:
+            # calculate the number of lines required for the text to fit
+            line_count = math.ceil((qr_code_label.size[0]) / (page_w_pixel - 2))
+
+            # split string into a list of equal-length lines
+            qr_code_text_lines = re.findall('.' * int((len(qr_code_text)) / line_count), qr_code_text)
+
+            # re-join the string, adding line breaks where necessary
+            qr_code_text = '\n'.join(qr_code_text_lines)
+
+        # append the qr code text to the template
+        human_readable_page_template += f"{qr_code_text}\n\n"
+
+    return human_readable_page_template
+
 def qr_codes(data, error_correction, version, scale):
     naive_chunk_size = qr_size_chars(version, MODE, error_correction)
     chunk_digits, chunks = generate_chunks(data, naive_chunk_size)
@@ -353,7 +378,7 @@ def add_label(image, text, side="bottom", max_fontsize=24, max_width=None, label
         assert False, "Unknown side for label: {}".format(side)
     return labeled
 
-def generate_label(text, max_width, max_fontsize=24, min_fontsize=4):
+def generate_label(text, max_width, max_fontsize=24, min_fontsize=4, allow_oversize=False):
     # to do, maybe some fancy word wrap
     test_im = PIL.Image.new(mode="1", size=(1,1), color=1)
     test_draw = PIL.ImageDraw.Draw(test_im)
@@ -362,7 +387,7 @@ def generate_label(text, max_width, max_fontsize=24, min_fontsize=4):
         font = PIL.ImageFont.truetype("DejaVuSans.ttf", fontsize)
         width, height = test_draw.multiline_textsize(text, font=font)
         height += 4
-        if width <= max_width:
+        if width <= max_width or allow_oversize:
             im = PIL.Image.new(mode="1", size=(width, height), color=1) # black-and-white
             draw = PIL.ImageDraw.Draw(im)
             draw.multiline_text((0,-2), text, font=font) # Eurgh, hardcoding an offset.
@@ -419,6 +444,7 @@ def main_backup(args):
     use_encryption = False
     encryption_passphrase = None
     print_passphrase = None
+    human_readable = True
 
     # parse arguments
     pargs = []
@@ -452,6 +478,8 @@ def main_backup(args):
             assert len(restore_file) > 0 and not restore_file.startswith("-")
         elif arg == "--generate-docs": # Development only. Don't document or use please.
             GENERATE_DOCS=True
+        elif arg == "--human-readable":
+            human_readable = True
         elif arg == "--instructions":
             if len(args) < 1:
                 show_help("--instructions requires one argument")
@@ -572,6 +600,7 @@ def main_backup(args):
 
     # Generate QR codes
     code_digits, qrs = qr_codes(content, error_correction=error_correction, version=qr_version, scale=scale)
+    global_qrs = qrs
 
     # How to restore
     restore_cmd = f'sort -u | grep "^N" | cut -c{code_digits*2+4}- | base64 -d'
@@ -659,7 +688,6 @@ def main_backup(args):
     if add_cover_instructions:
         cover_img = generate_label(cover_txt, page_w_pixel - qr_hpad, max_fontsize=24, min_fontsize=24)
         assert cover_img.size[0] <= page_w_pixel - 2
-        unnumbered_images.append((True, cover_img))
     for page_start in range(0, len(rows), page_h_qr):
         page_rows = rows[page_start:page_start+page_h_qr]
         page_qrs = v_merge(page_rows)
@@ -689,6 +717,14 @@ def main_backup(args):
             page_num = generate_label("page {}/{}".format(page_num+1, num_pages), max_width=example_qr.size[0]/2)
             page.paste(page_num, (page.size[0]-page_num.size[0]-1-qr_rpad, page.size[1]-page_num.size[1]-11)) # Page num in bottom-right
         pages.append(page)
+
+    # generate human-readable page
+    if human_readable:
+        human_readable_page_template = generate_human_readable_page_template(qrs, page_w_pixel, qr_hpad)
+        human_readable_page = generate_label(human_readable_page_template, page_w_pixel - qr_hpad, max_fontsize=24, min_fontsize=24)
+        assert human_readable_page.size[0] <= page_w_pixel - 2
+        unnumbered_images.append((True, human_readable_page))
+        pages.append(human_readable_page)
 
     # PIL's pdf writer needs to mmap, so it can't accept sys.stdout directly
     tmp_pdf = io.BytesIO()
