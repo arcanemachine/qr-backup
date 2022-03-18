@@ -272,11 +272,14 @@ def generate_chunks(data, chunk_size_base64):
     assert len(chunks) == num_qrs
     return chunk_digits, chunks
 
-def generate_human_readable_page_template(qrs, page_w_pixel, qr_hpad):
+def generate_human_readable_page_template(qrs, input_filename, sha256sum, page_w_pixel, qr_hpad):
     human_readable_page_template = ""
     qr_data = [qr.data_list[0].data.decode('utf-8') for qr in qrs]
 
-    human_readable_page_template = ""
+    backup_date = datetime.date.today().strftime("%Y-%m-%d")
+    human_readable_page_template = f"Generated on: {backup_date}\n" +\
+                                   f"Input filename: {input_filename}\n" +\
+                                   f"sha256: {sha256sum}\n\n"
 
     for qr_code_text in qr_data:
         qr_code_label = generate_label(qr_code_text, page_w_pixel - qr_hpad, max_fontsize=24, min_fontsize=24, allow_oversize=True)
@@ -720,7 +723,7 @@ def main_backup(args):
 
     # generate human-readable page
     if human_readable:
-        human_readable_page_template = generate_human_readable_page_template(qrs, page_w_pixel, qr_hpad)
+        human_readable_page_template = generate_human_readable_page_template(qrs, input_filename, sha256sum, page_w_pixel, qr_hpad)
         human_readable_page = generate_label(human_readable_page_template, page_w_pixel - qr_hpad, max_fontsize=24, min_fontsize=24)
         assert human_readable_page.size[0] <= page_w_pixel - 2
         unnumbered_images.append((True, human_readable_page))
