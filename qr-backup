@@ -437,9 +437,9 @@ def main_backup(args):
     # default settings
     qr_version = 25
     error_correction = H # default, 25%
-    scale = 4
+    scale = 6
     dpi = 300
-    page_w_points, page_h_points = 370,530
+    page_w_points, page_h_points = 555,765
     restore_file = None
     use_compression = True
     output_path = None
