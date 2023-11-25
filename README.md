@@ -1,3 +1,12 @@
+# qr-backup
+
+## TLDR
+
+Backup: `qr-backup /path/to/input/file -o /path/to/output.pdf --human-readable`
+Restore: `./qr-backup --restore /path/to/your/images/*.png`
+
+## About This Project
+
 Generate paper backups for Linux. Currently **command-linux Linux only**.
 
 Takes any file, and outputs a "paper backup": a printable black-and-white pdf full of QR codes. To back up your file, print the PDF. The pile of paper in your hand is now a backup of the file.
