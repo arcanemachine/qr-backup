@@ -1,3 +1,5 @@
+*gitignored*
+
 /qr-codes
 *.qr.pdf
 __pycache__
