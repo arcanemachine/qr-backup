@@ -44,6 +44,11 @@ Backup options:
     --filename FILENAME
         Set the restored filename. Max 32 chars.
         Default: same as <FILE>
+    --human-readable
+        (Need to confirm) Adds human-readable info to backup data. Useful in
+        case of QR code corruption or unreadability
+    --human-readable--stdout
+        Prints human-readable info to stdout
     --instructions page|cover|both|none
         Sets how frequently the instructions are printed. If 'cover' or 'both'
         is selected, more verbose instructions will be printed on the cover
