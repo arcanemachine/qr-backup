@@ -1,5 +1,6 @@
 *gitignored*
 
+/venv/
 /qr-codes
 *.qr.pdf
 __pycache__
