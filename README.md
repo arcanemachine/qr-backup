@@ -2,8 +2,11 @@
 
 ## TLDR
 
-Backup: `qr-backup /path/to/input/file -o /path/to/output.pdf --human-readable`
-Restore: `./qr-backup --restore /path/to/your/images/*.png`
+Backup (Make one of each):
+    - PDF: `qr-backup /path/to/input/file -o /path/to/output.pdf`
+    - TXT: `qr-backup /path/to/input/file --human-readable-stdout > /path/to/output.txt`
+
+Restore from scanned images: `./qr-backup --restore /path/to/your/images/*.png`
 
 ## About This Project
 
